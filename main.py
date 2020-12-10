@@ -1,26 +1,27 @@
 import xlrd
-import operation_class as Operation
+import my_asset_class as Asset
 
 operations = []
 
 
-def add_new_operation(new_op):
+def add_new_operation(new_op, operation_type):
     for op in operations:
         if new_op.asset == op.asset:
-            if new_op.type == 'COMPRADA':
-                new_qnt = new_op.quant + op.quant
-                new_price = ((new_op.quant * new_op.price) + (op.quant * op.price)) / new_qnt
+            if operation_type == 'COMPRADA':
+                new_qnt = op.quant + new_op.quant
+                new_price = ((op.quant * op.price) + (new_op.quant * new_op.price)) / new_qnt
                 op.quant = new_qnt
                 op.price = float(int(new_price*1000)/1000)
+                return
+            elif operation_type == 'VENDIDA':
+                new_qnt = op.quant - new_op.quant
+                op.quant = new_qnt
                 return
     operations.append(new_op)
 
 
 def perform():
     file_b3 = xlrd.open_workbook('files/compras_b3.xls')
-    nsheets = file_b3.nsheets
-    print('SHEETS NUMBER: ' + str(nsheets))
-
     sheet = file_b3.sheet_by_index(0)
 
     found_buy_title = False
@@ -54,16 +55,21 @@ def perform():
                 operation_type = str(sheet.cell(row, 54).value)
 
                 qnt = qnt_sell if operation_type == 'VENDIDA' else qnt_buy
-                preco = average_sell_prince if operation_type == 'VENDIDA' else average_buy_prince
+                prince = average_sell_prince if operation_type == 'VENDIDA' else average_buy_prince
 
-                op = Operation.Operation(asset=asset, quant=qnt, price=preco, type=operation_type)
-                add_new_operation(op)
+                op = Asset.MyAsset(asset=asset, quant=qnt, price=prince)
+                add_new_operation(op, operation_type)
             else:
                 break
 
 
+def asset(op):
+    return op.asset
+
+
 if __name__ == '__main__':
     perform()
+    operations.sort(key=asset)
     for operation in operations:
         operation.print()
 
