@@ -5,6 +5,14 @@ import os.path as path
 from os import listdir
 
 operations = []
+operations_without_zero_qnt = []
+
+
+def calculate_average_price(op, new_op):
+    new_qnt = op.quant + new_op.quant
+    if new_qnt != 0:
+        return ((op.quant * op.price) + (new_op.quant * new_op.price)) / new_qnt
+    return 0
 
 
 def add_new_operation(new_op, operation_type):
@@ -12,13 +20,15 @@ def add_new_operation(new_op, operation_type):
         if new_op.asset == op.asset:
             if operation_type == 'C':
                 new_qnt = op.quant + new_op.quant
-                new_price = ((op.quant * op.price) + (new_op.quant * new_op.price)) / new_qnt
+                new_price = calculate_average_price(op, new_op)
                 op.quant = new_qnt
                 op.price = float(int(new_price * 1000) / 1000)
                 return
             elif operation_type == 'V':
                 new_qnt = op.quant - new_op.quant
                 op.quant = new_qnt
+                if new_qnt == 0:
+                    op.price = 0.0
                 return
     if operation_type == 'V':
         new_op.quant = (new_op.quant * -1)
@@ -104,7 +114,7 @@ def read_inter_excel_file(file):
                 op = Asset.MyAsset(asset=asset, quant=qnt, price=price)
                 add_new_operation(op, operation_type)
             else:
-                break
+                starting_asset_read = False
 
 
 def asset(op):
@@ -120,13 +130,19 @@ def write_excel_file(name_result_file):
     sheet.write(index, 1, 'QNT')
     sheet.write(index, 2, 'PRICE')
 
-    for operation in operations:
+    for operation in operations_without_zero_qnt:
         index += 1
         sheet.write(index, 0, operation.asset)
         sheet.write(index, 1, operation.quant)
         sheet.write(index, 2, operation.price)
 
     xls.save(name_result_file)
+
+
+def remove_asset_quant_zero():
+    for op in operations:
+        if op.quant > 0:
+            operations_without_zero_qnt.append(op)
 
 
 def perform_from_cei():
@@ -138,6 +154,9 @@ def perform_from_cei():
 
     print('SORTING')
     operations.sort(key=asset)
+
+    print('REMOVING ASSET WITH ZERO QUANT')
+    remove_asset_quant_zero()
 
     print("WRITING DATA")
     write_excel_file('result_cei.xls')
@@ -155,13 +174,17 @@ def perform_from_inter():
     print('SORTING')
     operations.sort(key=asset)
 
+    print('REMOVING ASSET WITH ZERO QUANT')
+    remove_asset_quant_zero()
+
     print("WRITING DATA")
     write_excel_file('result_inter.xls')
 
     print('FINISHED WITH SUCCESS')
 
+
 def perform():
-    #perform_from_cei()
+    # perform_from_cei()
     perform_from_inter()
 
 
