@@ -8,13 +8,13 @@ import os.path as path
 from os import listdir
 
 operations = []
-operations_without_zero_qnt = []
+operations_without_zero_qty = []
 
 
 def calculate_average_price(op, new_op):
-    new_qnt = op.quant + new_op.quant
-    if new_qnt != 0:
-        return ((op.quant * op.price) + (new_op.quant * new_op.price)) / new_qnt
+    new_qty = op.qty + new_op.qty
+    if new_qty != 0:
+        return ((op.qty * op.price) + (new_op.qty * new_op.price)) / new_qty
     return 0
 
 
@@ -22,19 +22,19 @@ def add_new_operation(new_op, operation_type):
     for op in operations:
         if new_op.asset == op.asset:
             if operation_type == 'C':
-                new_qnt = op.quant + new_op.quant
+                new_qty = op.qty + new_op.qty
                 new_price = calculate_average_price(op, new_op)
-                op.quant = new_qnt
+                op.qty = new_qty
                 op.price = float(int(new_price * 1000) / 1000)
                 return
             elif operation_type == 'V':
-                new_qnt = op.quant - new_op.quant
-                op.quant = new_qnt
-                if new_qnt == 0:
+                new_qty = op.qty - new_op.qty
+                op.qty = new_qty
+                if new_qty == 0:
                     op.price = 0.0
                 return
     if operation_type == 'V':
-        new_op.quant = (new_op.quant * -1)
+        new_op.qty = (new_op.qty * -1)
     operations.append(new_op)
 
 
@@ -65,8 +65,8 @@ def read_cei_excel_file(file):
             if value != '':
                 asset = str(sheet.cell(row, 3).value).strip()
                 data_compra = str(sheet.cell(row, 10))
-                qnt_buy = int(sheet.cell(row, 18).value)
-                qnt_sell = int(sheet.cell(row, 24).value)
+                qty_buy = int(sheet.cell(row, 18).value)
+                qty_sell = int(sheet.cell(row, 24).value)
                 average_buy_price = str(sheet.cell(row, 34).value)
                 average_sell_price = str(sheet.cell(row, 43).value)
                 qnt_liquida = str(sheet.cell(row, 49).value)
@@ -76,10 +76,10 @@ def read_cei_excel_file(file):
                 if asset[-1] == 'F':
                     asset = asset[0:len(asset) - 1]
 
-                qnt = qnt_sell if operation_type == 'V' else qnt_buy
+                qty = qty_sell if operation_type == 'V' else qty_buy
                 price = average_sell_price if operation_type == 'V' else average_buy_price
 
-                op = Asset.MyAsset(asset=asset, quant=qnt, price=price)
+                op = Asset.MyAsset(asset=asset, qty=qty, price=price)
                 add_new_operation(op, operation_type)
             else:
                 break
@@ -114,7 +114,7 @@ def read_inter_excel_file(file):
                 if asset[-1] == 'F':
                     asset = asset[0:len(asset) - 1]
 
-                op = Asset.MyAsset(asset=asset, quant=qnt, price=price)
+                op = Asset.MyAsset(asset=asset, qty=qnt, price=price)
                 add_new_operation(op, operation_type)
             else:
                 starting_asset_read = False
@@ -130,26 +130,26 @@ def write_excel_file(name_result_file):
 
     index = 0
     sheet.write(index, 0, 'ASSET')
-    sheet.write(index, 1, 'QNT')
+    sheet.write(index, 1, 'QTY')
     sheet.write(index, 2, 'PRICE')
 
-    for operation in operations_without_zero_qnt:
+    for operation in operations_without_zero_qty:
         index += 1
         sheet.write(index, 0, operation.asset)
-        sheet.write(index, 1, operation.quant)
+        sheet.write(index, 1, operation.qty)
         sheet.write(index, 2, operation.price)
 
     xls.save(name_result_file)
 
 
-def remove_asset_quant_zero():
+def remove_asset_zero_qty():
     for op in operations:
-        if op.quant > 0:
-            operations_without_zero_qnt.append(op)
+        if op.qty > 0:
+            operations_without_zero_qty.append(op)
 
 
 def perform_from_cei():
-    print("READING XLS")
+    print('READING XLS')
     for file in listdir('files_cei'):
         file_path = 'files_cei/' + file
         if path.isfile(file_path):
@@ -159,10 +159,10 @@ def perform_from_cei():
     operations.sort(key=asset)
 
     print('REMOVING ASSET WITH ZERO')
-    remove_asset_quant_zero()
+    remove_asset_zero_qty()
 
-    print("WRITING DATA")
-    write_excel_file('result_cei.xls')
+    print('WRITING DATA')
+    write_excel_file('cei_result.xls')
 
     print('FINISHED WITH SUCCESS')
 
@@ -174,13 +174,13 @@ def check_developments(date):
         if dev['date'] == date:
             for op in operations:
                 if op.asset == dev['asset']:
-                    op.quant = op.quant * (dev['from'] * dev['to'])
+                    op.qty = op.qty * (dev['from'] * dev['to'])
                     op.price = op.price / (dev['from'] * dev['to'])
                     break
 
 
 def perform_from_inter():
-    print("READING XLS")
+    print('READING XLS')
 
     config = config_json['inter_file']
 
@@ -192,10 +192,10 @@ def perform_from_inter():
     else:
         for ano in range(int(config['initial_year']), int(config['final_year']) + 1):
             my_datetime = datetime.datetime(ano, 1, 1)
-            while my_datetime.strftime('%Y') == ano:
-                date = my_datetime.strftime("%m-%d-%Y")
+            while my_datetime.strftime('%Y') == str(ano):
+                date = my_datetime.strftime('%m-%d-%Y')
                 check_developments(date)
-                str_date = my_datetime.strftime("%d%m%Y")
+                str_date = my_datetime.strftime('%d%m%Y')
                 name_file = '_NotaCor_' + str_date + '_'+config['cod_cli']+'.xls'
                 file_path = 'files_inter/' + name_file
                 if path.exists(file_path) and path.isfile(file_path):
@@ -206,17 +206,20 @@ def perform_from_inter():
     operations.sort(key=asset)
 
     print('REMOVING ASSET WITH ZERO')
-    remove_asset_quant_zero()
+    remove_asset_zero_qty()
 
-    print("WRITING DATA")
-    write_excel_file('result_inter.xls')
+    print('WRITING DATA')
+    write_excel_file('inter_result.xls')
 
     print('FINISHED WITH SUCCESS')
 
 
 def perform():
-    # perform_from_cei()
-    perform_from_inter()
+    if config_json['perform_inter']:
+        perform_from_inter()
+
+    if config_json['perform_cei']:
+        perform_from_cei()
 
 
 if __name__ == '__main__':

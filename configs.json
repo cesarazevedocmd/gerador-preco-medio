@@ -1,4 +1,6 @@
 {
+  "perform_inter": true,
+  "perform_cei": false,
   "inter_file":{
     "cod_cli": "172075",
     "read_file_by_file": false,
