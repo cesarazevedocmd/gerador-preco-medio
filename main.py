@@ -1,6 +1,8 @@
 import xlrd
 import xlwt
 import json
+import datetime
+from datetime import timedelta
 import my_asset_class as Asset
 import os.path as path
 from os import listdir
@@ -189,18 +191,16 @@ def perform_from_inter():
                 read_inter_excel_file(file_path)
     else:
         for ano in range(int(config['initial_year']), int(config['final_year']) + 1):
-            for mes in range(1, 13):
-                mes = mes if mes > 9 else '0'+str(mes)
-                for dia in range(1, 32):
-                    dia = dia if dia > 9 else '0' + str(dia)
-
-                    date = str(mes) + '-' + str(dia) + '-' + str(ano)
-                    check_developments(date)
-
-                    name_file = '_NotaCor_'+str(dia)+str(mes)+str(ano)+'_172075.xls'
-                    file_path = 'files_inter/' + name_file
-                    if path.exists(file_path) and path.isfile(file_path):
-                        read_inter_excel_file(file_path)
+            my_datetime = datetime.datetime(ano, 1, 1)
+            while my_datetime.strftime('%Y') == ano:
+                date = my_datetime.strftime("%m-%d-%Y")
+                check_developments(date)
+                str_date = my_datetime.strftime("%d%m%Y")
+                name_file = '_NotaCor_' + str_date + '_'+config['cod_cli']+'.xls'
+                file_path = 'files_inter/' + name_file
+                if path.exists(file_path) and path.isfile(file_path):
+                    read_inter_excel_file(file_path)
+                my_datetime = my_datetime + timedelta(days=1)
 
     print('SORTING')
     operations.sort(key=asset)
