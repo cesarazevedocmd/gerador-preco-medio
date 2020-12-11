@@ -10,20 +10,22 @@ operations = []
 def add_new_operation(new_op, operation_type):
     for op in operations:
         if new_op.asset == op.asset:
-            if operation_type == 'COMPRADA':
+            if operation_type == 'C':
                 new_qnt = op.quant + new_op.quant
                 new_price = ((op.quant * op.price) + (new_op.quant * new_op.price)) / new_qnt
                 op.quant = new_qnt
                 op.price = float(int(new_price * 1000) / 1000)
                 return
-            elif operation_type == 'VENDIDA':
+            elif operation_type == 'V':
                 new_qnt = op.quant - new_op.quant
                 op.quant = new_qnt
                 return
+    if operation_type == 'V':
+        new_op.quant = (new_op.quant * -1)
     operations.append(new_op)
 
 
-def read_excel_file(file):
+def read_cei_excel_file(file):
     file_b3 = xlrd.open_workbook(file)
     sheet = file_b3.sheet_by_index(0)
 
@@ -52,18 +54,54 @@ def read_excel_file(file):
                 data_compra = str(sheet.cell(row, 10))
                 qnt_buy = int(sheet.cell(row, 18).value)
                 qnt_sell = int(sheet.cell(row, 24).value)
-                average_buy_prince = str(sheet.cell(row, 34).value)
-                average_sell_prince = str(sheet.cell(row, 43).value)
+                average_buy_price = str(sheet.cell(row, 34).value)
+                average_sell_price = str(sheet.cell(row, 43).value)
                 qnt_liquida = str(sheet.cell(row, 49).value)
                 operation_type = str(sheet.cell(row, 54).value)
+                operation_type = 'V' if operation_type == 'VENDIDA' else 'C'
 
                 if asset[-1] == 'F':
                     asset = asset[0:len(asset) - 1]
 
-                qnt = qnt_sell if operation_type == 'VENDIDA' else qnt_buy
-                prince = average_sell_prince if operation_type == 'VENDIDA' else average_buy_prince
+                qnt = qnt_sell if operation_type == 'V' else qnt_buy
+                price = average_sell_price if operation_type == 'V' else average_buy_price
 
-                op = Asset.MyAsset(asset=asset, quant=qnt, price=prince)
+                op = Asset.MyAsset(asset=asset, quant=qnt, price=price)
+                add_new_operation(op, operation_type)
+            else:
+                break
+
+
+def read_inter_excel_file(file):
+    file_b3 = xlrd.open_workbook(file)
+    sheet = file_b3.sheet_by_index(0)
+
+    starting_asset_read = False
+
+    for row in range(0, sheet.nrows):
+        if starting_asset_read:
+            value = str(sheet.cell(row, 3).value)
+        else:
+            value = str(sheet.cell(row, 0).value)
+
+        if value == 'PRAÇA':
+            starting_asset_read = True
+            continue
+
+        if starting_asset_read:
+            if value == 'SUBTOTAL:':
+                continue
+
+            if value != '':
+                operation_type = str(sheet.cell(row, 1).value)
+                asset = str(sheet.cell(row, 3).value).split(' ')[0]
+                qnt = int(sheet.cell(row, 5).value)
+                price = str(sheet.cell(row, 6).value)
+
+                if asset[-1] == 'F':
+                    asset = asset[0:len(asset) - 1]
+
+                op = Asset.MyAsset(asset=asset, quant=qnt, price=price)
                 add_new_operation(op, operation_type)
             else:
                 break
@@ -73,7 +111,7 @@ def asset(op):
     return op.asset
 
 
-def write_excel_file():
+def write_excel_file(name_result_file):
     xls = xlwt.Workbook()
     sheet = xls.add_sheet('ASSETS')
 
@@ -88,23 +126,43 @@ def write_excel_file():
         sheet.write(index, 1, operation.quant)
         sheet.write(index, 2, operation.price)
 
-    xls.save('output.xls')
+    xls.save(name_result_file)
 
 
-def perform():
-    print("READING EXCEL")
-    for file in listdir('files'):
-        file_path = 'files/' + file
+def perform_from_cei():
+    print("READING XLS")
+    for file in listdir('files_cei'):
+        file_path = 'files_cei/' + file
         if path.isfile(file_path):
-            read_excel_file(file_path)
+            read_cei_excel_file(file_path)
 
     print('SORTING')
     operations.sort(key=asset)
 
     print("WRITING DATA")
-    write_excel_file()
+    write_excel_file('result_cei.xls')
 
     print('FINISHED WITH SUCCESS')
+
+
+def perform_from_inter():
+    print("READING XLS")
+    for file in listdir('files_inter'):
+        file_path = 'files_inter/' + file
+        if path.isfile(file_path):
+            read_inter_excel_file(file_path)
+
+    print('SORTING')
+    operations.sort(key=asset)
+
+    print("WRITING DATA")
+    write_excel_file('result_inter.xls')
+
+    print('FINISHED WITH SUCCESS')
+
+def perform():
+    #perform_from_cei()
+    perform_from_inter()
 
 
 if __name__ == '__main__':
