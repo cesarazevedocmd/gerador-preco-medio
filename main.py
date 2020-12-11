@@ -1,5 +1,6 @@
 import xlrd
 import xlwt
+import json
 import my_asset_class as Asset
 import os.path as path
 from os import listdir
@@ -166,10 +167,24 @@ def perform_from_cei():
 
 def perform_from_inter():
     print("READING XLS")
-    for file in listdir('files_inter'):
-        file_path = 'files_inter/' + file
-        if path.isfile(file_path):
-            read_inter_excel_file(file_path)
+
+    config = config_json['inter_file']
+
+    if config['read_file_by_file']:
+        for file in listdir('files_inter'):
+            file_path = 'files_inter/' + file
+            if path.isfile(file_path):
+                read_inter_excel_file(file_path)
+    else:
+        for ano in range(int(config['initial_year']), int(config['final_year']) + 1):
+            for mes in range(1, 13):
+                mes = mes if mes > 9 else '0'+str(mes)
+                for dia in range(1, 32):
+                    dia = dia if dia > 9 else '0' + str(dia)
+                    name_file = '_NotaCor_'+str(dia)+str(mes)+str(ano)+'_172075.xls'
+                    file_path = 'files_inter/' + name_file
+                    if path.exists(file_path) and path.isfile(file_path):
+                        read_inter_excel_file(file_path)
 
     print('SORTING')
     operations.sort(key=asset)
@@ -189,6 +204,8 @@ def perform():
 
 
 if __name__ == '__main__':
+    file_json = open('configs.json')
+    config_json = json.load(file_json)
     perform()
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
