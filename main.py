@@ -156,13 +156,25 @@ def perform_from_cei():
     print('SORTING')
     operations.sort(key=asset)
 
-    print('REMOVING ASSET WITH ZERO QUANT')
+    print('REMOVING ASSET WITH ZERO')
     remove_asset_quant_zero()
 
     print("WRITING DATA")
     write_excel_file('result_cei.xls')
 
     print('FINISHED WITH SUCCESS')
+
+
+def check_developments(date):
+    developments = config_json['developments']
+
+    for dev in developments:
+        if dev['date'] == date:
+            for op in operations:
+                if op.asset == dev['asset']:
+                    op.quant = op.quant * (dev['from'] * dev['to'])
+                    op.price = op.price / (dev['from'] * dev['to'])
+                    break
 
 
 def perform_from_inter():
@@ -181,6 +193,10 @@ def perform_from_inter():
                 mes = mes if mes > 9 else '0'+str(mes)
                 for dia in range(1, 32):
                     dia = dia if dia > 9 else '0' + str(dia)
+
+                    date = str(mes) + '-' + str(dia) + '-' + str(ano)
+                    check_developments(date)
+
                     name_file = '_NotaCor_'+str(dia)+str(mes)+str(ano)+'_172075.xls'
                     file_path = 'files_inter/' + name_file
                     if path.exists(file_path) and path.isfile(file_path):
@@ -189,7 +205,7 @@ def perform_from_inter():
     print('SORTING')
     operations.sort(key=asset)
 
-    print('REMOVING ASSET WITH ZERO QUANT')
+    print('REMOVING ASSET WITH ZERO')
     remove_asset_quant_zero()
 
     print("WRITING DATA")
