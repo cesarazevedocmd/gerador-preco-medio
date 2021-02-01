@@ -1,3 +1,6 @@
 venv/
 files_cei/
 files_inter
+venv
+venv/*
+.idea
