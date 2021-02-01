@@ -5,7 +5,7 @@
     "cod_cli": "",
     "read_file_by_file": false,
     "initial_year": 2019,
-    "final_year": 2020
+    "final_year": 2021
   },
   "developments": [
     {
@@ -25,6 +25,12 @@
       "from": 1,
       "to": 8,
       "date": "08-09-2019"
+    },
+    {
+      "asset": "LWSA3",
+      "from": 1,
+      "to": 4,
+      "date": "02-01-2021"
     }
   ]
 }
