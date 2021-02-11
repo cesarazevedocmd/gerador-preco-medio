@@ -184,34 +184,37 @@ def perform_from_inter():
 
     config = config_json['inter_file']
 
-    if config['read_file_by_file']:
-        for file in listdir('files_inter'):
-            file_path = 'files_inter/' + file
-            if path.isfile(file_path):
-                read_inter_excel_file(file_path)
+    if config['cod_cli'] is None or config['cod_cli'] == '':
+        print('MISSING KEY \"cod_cli\", CHECK configs.json')
     else:
-        for ano in range(int(config['initial_year']), int(config['final_year']) + 1):
-            my_datetime = datetime.datetime(ano, 1, 1)
-            while my_datetime.strftime('%Y') == str(ano):
-                date = my_datetime.strftime('%m-%d-%Y')
-                check_developments(date)
-                str_date = my_datetime.strftime('%d%m%Y')
-                name_file = '_NotaCor_' + str_date + '_'+config['cod_cli']+'.xls'
-                file_path = 'files_inter/' + name_file
-                if path.exists(file_path) and path.isfile(file_path):
+        if config['read_file_by_file']:
+            for file in listdir('files_inter'):
+                file_path = 'files_inter/' + file
+                if path.isfile(file_path):
                     read_inter_excel_file(file_path)
-                my_datetime = my_datetime + timedelta(days=1)
+        else:
+            for ano in range(int(config['initial_year']), int(config['final_year']) + 1):
+                my_datetime = datetime.datetime(ano, 1, 1)
+                while my_datetime.strftime('%Y') == str(ano):
+                    date = my_datetime.strftime('%m-%d-%Y')
+                    check_developments(date)
+                    str_date = my_datetime.strftime('%d%m%Y')
+                    name_file = '_NotaCor_' + str_date + '_'+config['cod_cli']+'.xls'
+                    file_path = 'files_inter/' + name_file
+                    if path.exists(file_path) and path.isfile(file_path):
+                        read_inter_excel_file(file_path)
+                    my_datetime = my_datetime + timedelta(days=1)
 
-    print('SORTING')
-    operations.sort(key=asset)
+        print('SORTING')
+        operations.sort(key=asset)
 
-    print('REMOVING ASSET WITH ZERO')
-    remove_asset_zero_qty()
+        print('REMOVING ASSET WITH ZERO')
+        remove_asset_zero_qty()
 
-    print('WRITING DATA')
-    write_excel_file('inter_result.xls')
+        print('WRITING DATA')
+        write_excel_file('inter_result.xls')
 
-    print('FINISHED WITH SUCCESS')
+        print('FINISHED WITH SUCCESS')
 
 
 def perform():
