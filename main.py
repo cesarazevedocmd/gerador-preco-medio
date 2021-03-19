@@ -9,6 +9,8 @@ from os import listdir
 
 operations = []
 operations_without_zero_qty = []
+fii = []
+assets = []
 
 
 def calculate_average_price(op, new_op):
@@ -128,16 +130,34 @@ def write_excel_file(name_result_file):
     xls = xlwt.Workbook()
     sheet = xls.add_sheet('ASSETS')
 
-    index = 0
-    sheet.write(index, 0, 'ASSET')
-    sheet.write(index, 1, 'QTY')
-    sheet.write(index, 2, 'PRICE')
+    collum_zero = 0
+    collum_one = 1
+    collum_two = 2
+    collum_five = 5
+    collum_six = 6
+    collum_seven = 7
 
-    for operation in operations_without_zero_qty:
-        index += 1
-        sheet.write(index, 0, operation.asset)
-        sheet.write(index, 1, operation.qty)
-        sheet.write(index, 2, operation.price)
+    line = 0
+    sheet.write(line, collum_zero, 'ASSET')
+    sheet.write(line, collum_one, 'QTY')
+    sheet.write(line, collum_two, 'PRICE')
+
+    for operation in assets:
+        line += 1
+        sheet.write(line, collum_zero, operation.asset)
+        sheet.write(line, collum_one, operation.qty)
+        sheet.write(line, collum_two, operation.price)
+
+    line = 0
+    sheet.write(line, collum_five, 'FII')
+    sheet.write(line, collum_six, 'QTY')
+    sheet.write(line, collum_seven, 'PRICE')
+
+    for operation in fii:
+        line += 1
+        sheet.write(line, collum_five, operation.asset)
+        sheet.write(line, collum_six, operation.qty)
+        sheet.write(line, collum_seven, operation.price)
 
     xls.save(name_result_file)
 
@@ -146,6 +166,14 @@ def remove_asset_zero_qty():
     for op in operations:
         if op.qty > 0:
             operations_without_zero_qty.append(op)
+
+
+def part_assets():
+    for operation in operations_without_zero_qty:
+        if str(operation.asset).endswith('11'):
+            fii.append(operation)
+        else:
+            assets.append(operation)
 
 
 def perform_from_cei():
@@ -160,6 +188,9 @@ def perform_from_cei():
 
     print('REMOVING ASSET WITH ZERO')
     remove_asset_zero_qty()
+
+    print('PARTING ASSETS')
+    part_assets()
 
     print('WRITING DATA')
     write_excel_file('cei_result.xls')
@@ -210,6 +241,9 @@ def perform_from_inter():
 
         print('REMOVING ASSET WITH ZERO')
         remove_asset_zero_qty()
+
+        print('PARTING ASSETS')
+        part_assets()
 
         print('WRITING DATA')
         write_excel_file('inter_result.xls')
