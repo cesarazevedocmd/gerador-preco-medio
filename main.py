@@ -1,16 +1,19 @@
-import xlrd
-import xlwt
-import json
+import copy
 import datetime
-from datetime import timedelta
-import my_asset_class as Asset
+import json
 import os.path as path
+from datetime import timedelta
 from os import listdir
 
+import xlrd
+import xlwt
+
+import my_asset_class as Asset
+
 operations = []
-operations_without_zero_qty = []
 fii = []
 assets = []
+assets_per_year = {}
 
 
 def calculate_average_price(op, new_op):
@@ -18,6 +21,14 @@ def calculate_average_price(op, new_op):
     if new_qty != 0:
         return ((op.qty * op.price) + (new_op.qty * new_op.price)) / new_qty
     return 0
+
+
+def asset(op):
+    return op.asset
+
+
+def sort_assets(assets_list):
+    assets_list.sort(key=asset)
 
 
 def add_new_operation(new_op, operation_type):
@@ -122,12 +133,38 @@ def read_inter_excel_file(file):
                 starting_asset_read = False
 
 
-def asset(op):
-    return op.asset
+def create_spreadsheet_with_asset_per_year(xls):
+    sheet_per_year = xls.add_sheet('ASSETS_PER_YEAR')
+
+    collum_a = 0
+    collum_b = 1
+    collum_c = 2
+    collum_d = 3
+    for year_key in assets_per_year.keys():
+        line = 0
+        sheet_per_year.write(line, collum_a, str(year_key))
+
+        line += 1
+        sheet_per_year.write(line, collum_a, 'ASSET')
+        sheet_per_year.write(line, collum_b, 'QTY')
+        sheet_per_year.write(line, collum_c, 'PRICE')
+        sheet_per_year.write(line, collum_d, 'TOTAL')
+
+        for operation in assets_per_year.get(year_key):
+            line += 1
+            sheet_per_year.write(line, collum_a, operation.asset)
+            sheet_per_year.write(line, collum_b, operation.qty)
+            sheet_per_year.write(line, collum_c, operation.price)
+            sheet_per_year.write(line, collum_d, (operation.price * operation.qty))
+
+        jump_collum = 5
+        collum_a += jump_collum
+        collum_b += jump_collum
+        collum_c += jump_collum
+        collum_d += jump_collum
 
 
-def write_excel_file(name_result_file):
-    xls = xlwt.Workbook()
+def create_spreadsheet_with_assets(xls):
     sheet = xls.add_sheet('ASSETS')
 
     collum_zero = 0
@@ -159,17 +196,27 @@ def write_excel_file(name_result_file):
         sheet.write(line, collum_six, operation.qty)
         sheet.write(line, collum_seven, operation.price)
 
+
+def write_excel_file(name_result_file):
+    xls = xlwt.Workbook()
+
+    create_spreadsheet_with_assets(xls)
+
+    create_spreadsheet_with_asset_per_year(xls)
+
     xls.save(name_result_file)
 
 
-def remove_asset_zero_qty():
-    for op in operations:
+def remove_asset_zero_qty(assets_list):
+    new_assets_with_zero_qty = []
+    for op in assets_list:
         if op.qty > 0:
-            operations_without_zero_qty.append(op)
+            new_assets_with_zero_qty.append(op)
+    return new_assets_with_zero_qty
 
 
 def part_assets():
-    for operation in operations_without_zero_qty:
+    for operation in remove_asset_zero_qty(operations):
         if str(operation.asset).endswith('11'):
             fii.append(operation)
         else:
@@ -184,12 +231,9 @@ def perform_from_cei():
             read_cei_excel_file(file_path)
 
     print('SORTING')
-    operations.sort(key=asset)
+    sort_assets(operations)
 
-    print('REMOVING ASSET WITH ZERO')
-    remove_asset_zero_qty()
-
-    print('PARTING ASSETS')
+    print('REMOVING ASSET WITH ZERO AND PARTING ASSETS')
     part_assets()
 
     print('WRITING DATA')
@@ -210,6 +254,13 @@ def check_developments(date):
                     break
 
 
+def add_operations_to_year(year):
+    if assets_per_year.get(year) is None:
+        assets_copy = copy.deepcopy(operations)
+        sort_assets(assets_copy)
+        assets_per_year[year] = remove_asset_zero_qty(assets_copy)
+
+
 def perform_from_inter():
     print('READING XLS')
 
@@ -224,25 +275,23 @@ def perform_from_inter():
                 if path.isfile(file_path):
                     read_inter_excel_file(file_path)
         else:
-            for ano in range(int(config['initial_year']), int(config['final_year']) + 1):
-                my_datetime = datetime.datetime(ano, 1, 1)
-                while my_datetime.strftime('%Y') == str(ano):
+            for year in range(int(config['initial_year']), int(config['final_year']) + 1):
+                my_datetime = datetime.datetime(year, 1, 1)
+                while my_datetime.strftime('%Y') == str(year):
                     date = my_datetime.strftime('%m-%d-%Y')
                     check_developments(date)
                     str_date = my_datetime.strftime('%d%m%Y')
-                    name_file = '_NotaCor_' + str_date + '_'+config['cod_cli']+'.xls'
+                    name_file = '_NotaCor_' + str_date + '_' + config['cod_cli'] + '.xls'
                     file_path = 'files_inter/' + name_file
                     if path.exists(file_path) and path.isfile(file_path):
                         read_inter_excel_file(file_path)
                     my_datetime = my_datetime + timedelta(days=1)
+                add_operations_to_year(year)
 
         print('SORTING')
-        operations.sort(key=asset)
+        sort_assets(operations)
 
-        print('REMOVING ASSET WITH ZERO')
-        remove_asset_zero_qty()
-
-        print('PARTING ASSETS')
+        print('REMOVING ASSET WITH ZERO AND PARTING ASSETS')
         part_assets()
 
         print('WRITING DATA')
