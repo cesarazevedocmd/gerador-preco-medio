@@ -31,7 +31,18 @@ def sort_assets(assets_list):
     assets_list.sort(key=asset)
 
 
+def validate_new_asset_name(asset_name):
+    for dic_name in config_json["new_names"]:
+        if asset_name in dic_name:
+            return dic_name[asset_name]
+
+    return asset_name
+
+
 def add_new_operation(new_op, operation_type):
+
+    new_op.asset = validate_new_asset_name(new_op.asset)
+
     for op in operations:
         if new_op.asset == op.asset:
             if operation_type == 'C':
@@ -118,7 +129,7 @@ def read_inter_excel_file(file):
             if value == 'SUBTOTAL:':
                 continue
 
-            if value != '':
+            if value != '' and value != 'None':
                 operation_type = str(sheet.cell(row, 1).value)
                 asset = str(sheet.cell(row, 3).value).split(' ')[0]
                 qnt = int(sheet.cell(row, 5).value)
@@ -285,6 +296,10 @@ def perform_from_inter():
                     file_path = 'files_inter/' + name_file
                     if path.exists(file_path) and path.isfile(file_path):
                         read_inter_excel_file(file_path)
+                    else:
+                        file_path = file_path + 'x'
+                        if path.exists(file_path) and path.isfile(file_path):
+                            read_inter_excel_file(file_path)
                     my_datetime = my_datetime + timedelta(days=1)
                 add_operations_to_year(year)
 

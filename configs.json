@@ -1,7 +1,7 @@
 {
   "perform_inter": true,
   "perform_cei": false,
-  "inter_file":{
+  "inter_file": {
     "cod_cli": "172075",
     "read_file_by_file": false,
     "initial_year": 2019,
@@ -43,6 +43,11 @@
       "from": 1,
       "to": 6,
       "date": "09-09-2021"
+    }
+  ],
+  "new_names": [
+    {
+      "VVAR3": "VIIA3"
     }
   ]
 }
